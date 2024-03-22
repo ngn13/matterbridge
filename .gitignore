@@ -1,6 +1,7 @@
 # Exclude matterbridge binary
 /matterbridge
 /matterbridge.exe
+/dist
 
 # Exclude configuration file
 matterbridge.toml
