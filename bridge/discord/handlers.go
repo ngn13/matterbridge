@@ -1,6 +1,8 @@
 package bdiscord
 
 import (
+	"fmt"
+
 	"github.com/42wim/matterbridge/bridge/config"
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
@@ -152,6 +154,9 @@ func (b *Bdiscord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreat
 
 	// Replace emotes
 	rmsg.Text = replaceEmotes(rmsg.Text)
+	if m.ReferencedMessage != nil && m.ReferencedMessage.Content != "" {
+		rmsg.Text = fmt.Sprintf("\n> %s\n%s", m.ReferencedMessage.Content, rmsg.Text)
+	}
 
 	// Add our parent id if it exists, and if it's not referring to a message in another channel
 	if ref := m.MessageReference; ref != nil && ref.ChannelID == m.ChannelID {

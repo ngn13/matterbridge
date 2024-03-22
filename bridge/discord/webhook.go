@@ -2,6 +2,7 @@ package bdiscord
 
 import (
 	"bytes"
+	"strings"
 
 	"github.com/42wim/matterbridge/bridge/config"
 	"github.com/42wim/matterbridge/bridge/helper"
@@ -42,6 +43,27 @@ func (b *Bdiscord) maybeGetLocalAvatar(msg *config.Message) string {
 	return ""
 }
 
+func IsImageURL(text string) bool {
+	if !strings.HasPrefix(text, "https://") &&
+		 !strings.HasPrefix(text, "http://") {
+		return false
+	}
+
+	extlist := []string{
+		".jpeg", ".jpg", ".png", ".webp",
+	}
+
+	found := false
+	for _, e := range extlist {
+		if strings.HasSuffix(text, e){
+			found = true
+			break
+		}
+	}
+
+	return found
+}
+
 // webhookSend send one or more message via webhook, taking care of file
 // uploads (from slack, telegram or mattermost).
 // Returns messageID and error.
@@ -60,11 +82,33 @@ func (b *Bdiscord) webhookSend(msg *config.Message, channelID string) (*discordg
 	// WebhookParams can have either `Content` or `File`.
 
 	// We can't send empty messages.
-	if msg.Text != "" {
+	if msg.Text != "" && !IsImageURL(msg.Text){
 		res, err = b.transmitter.Send(
 			channelID,
 			&discordgo.WebhookParams{
 				Content:         msg.Text,
+				Username:        msg.Username,
+				AvatarURL:       msg.Avatar,
+				AllowedMentions: b.getAllowedMentions(),
+			},
+		)
+		if err != nil {
+			b.Log.Errorf("Could not send text (%s) for message %#v: %s", msg.Text, msg, err)
+		}
+	}
+
+	if IsImageURL(msg.Text){
+		embed := &discordgo.MessageEmbed{
+			Title: "Image",
+			Color: 0x000099,
+			Image: &discordgo.MessageEmbedImage{
+				URL: msg.Text,
+			},
+		}
+		res, err = b.transmitter.Send(
+			channelID,
+			&discordgo.WebhookParams{
+				Embeds:          []*discordgo.MessageEmbed{embed},
 				Username:        msg.Username,
 				AvatarURL:       msg.Avatar,
 				AllowedMentions: b.getAllowedMentions(),
@@ -95,6 +139,7 @@ func (b *Bdiscord) webhookSend(msg *config.Message, channelID string) (*discordg
 					AllowedMentions: b.getAllowedMentions(),
 				},
 			)
+
 			if err != nil {
 				b.Log.Errorf("Could not send file %#v for message %#v: %s", file, msg, err)
 			}

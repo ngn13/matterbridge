@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
+	"fmt"
 
 	"github.com/42wim/matterbridge/bridge"
 	"github.com/42wim/matterbridge/bridge/config"
